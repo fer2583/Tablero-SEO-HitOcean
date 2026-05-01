@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>HitOcean — SEO Control Center</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="logo"></div><div><h1>HitOcean<br/>SEO Control Center</h1><small>Google Sheets → JSON</small></div></div>
+    <nav>
+      <a href="#dashboard" class="active">📊 Dashboard</a>
+      <a href="#reports">📈 Informes</a>
+      <a href="#master">🧭 Master URLs</a>
+      <a href="#metadata">🏷️ Metadata</a>
+      <a href="#keywords">🔎 Keywords</a>
+      <a href="#redirects">↪️ Redirects</a>
+      <a href="#protected">🛡️ Protegidas</a>
+      <a href="#checklist">✅ Checklist</a>
+      <a href="#setup">⚙️ Setup</a>
+    </nav>
+    <div class="aside-note"><strong>Google Sheet ID:</strong><br/><code>1RKWE0S9HZPCiMy_ds-5KJEaGqPVslv8C</code></div>
+  </aside>
+
+  <main>
+    <header class="hero" id="dashboard">
+      <div>
+        <div class="eyebrow">Centro de control SEO</div>
+        <h2>Migración HitOcean a Astro</h2>
+        <p class="sub">Tablero automatizado conectado a Google Sheets mediante Apps Script. Cuando alguien modifica la hoja, el dashboard se actualiza al recargar.</p>
+        <div class="btns">
+          <button onclick="reloadData()">Actualizar datos</button>
+          <button class="secondary" onclick="window.print()">Exportar / imprimir PDF</button>
+          <button class="secondary" onclick="downloadCSV()">Descargar vista CSV</button>
+          <a class="btn secondary" target="_blank" href="https://docs.google.com/spreadsheets/d/1RKWE0S9HZPCiMy_ds-5KJEaGqPVslv8C/edit?usp=sharing&ouid=103185604411661124832&rtpof=true&sd=true">Abrir Google Sheet</a>
+        </div>
+        <div id="statusBox" class="status loading">Esperando configuración de DATA_URL...</div>
+      </div>
+      <div class="card readiness-card">
+        <div class="label">Readiness migración</div>
+        <div class="num" id="migrationReadiness">--%</div>
+        <div class="hint">Calculado según checklist aprobado</div>
+        <div class="progress"><span id="readyBar"></span></div>
+      </div>
+    </header>
+
+    <section><div class="grid kpis" id="kpis"></div></section>
+
+    <section id="reports">
+      <div class="section-title"><div><h3>Informes ejecutivos</h3><p>Resumen para gerencia.</p></div></div>
+      <div class="grid two">
+        <div class="card chart-wrap"><h4>Distribución por acción sugerida</h4><div id="actionChart"></div></div>
+        <div class="card chart-wrap"><h4>Riesgo por prioridad SEO</h4><div id="priorityChart"></div></div>
+        <div class="card chart-wrap"><h4>Estado de metadata</h4><div id="metadataChart"></div></div>
+        <div class="card chart-wrap"><h4>Principales issues técnicos</h4><div id="issuesChart"></div></div>
+      </div>
+      <div class="card mt"><h4>Lectura ejecutiva</h4><p class="report-text" id="executiveSummary">Cargando datos...</p></div>
+    </section>
+
+    <section id="master">
+      <div class="section-title"><div><h3>Master URL Mapping</h3><p>Base operativa URL por URL.</p></div></div>
+      <div class="card">
+        <div class="toolbar">
+          <input type="search" id="search" placeholder="Buscar URL, keyword, title, issue..."/>
+          <select id="filterPriority"><option value="">Prioridad: todas</option></select>
+          <select id="filterAction"><option value="">Acción: todas</option></select>
+          <select id="filterType"><option value="">Tipo: todos</option></select>
+          <select id="filterMeta"><option value="">Metadata: todas</option></select>
+          <button class="secondary" onclick="resetFilters()">Limpiar filtros</button>
+        </div>
+        <div class="muted" id="tableCount"></div>
+        <div class="tablebox"><table id="masterTable"><thead><tr><th>URL</th><th>Tipo</th><th>Prioridad</th><th>Acción</th><th>Status</th><th>Clics</th><th>Impresiones</th><th>KW</th><th>Metadata</th><th>Issues</th><th>QA</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="metadata"><div class="section-title"><div><h3>Control de metadata</h3><p>Titles, descriptions, canonicals y schema.</p></div></div><div class="card"><div class="tablebox"><table id="metadataTable"><thead><tr><th>URL</th><th>Title actual</th><th>Len</th><th>Description actual</th><th>Len</th><th>Estado</th><th>Schema</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="keywords"><div class="section-title"><div><h3>Keyword Mapping</h3><p>Keywords detectadas y objetivo SEO por URL.</p></div></div><div class="card"><div class="tablebox"><table id="keywordTable"><thead><tr><th>URL</th><th>Prioridad</th><th>KW detectada</th><th>Intent</th><th>Posición</th><th>Volumen</th><th>Clics</th><th>Impresiones</th><th>KW objetivo nueva</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="redirects"><div class="section-title"><div><h3>Redirects Review</h3><p>Redirecciones, consolidaciones y destinos a validar.</p></div></div><div class="card"><div class="tablebox"><table id="redirectTable"><thead><tr><th>URL actual</th><th>Prioridad</th><th>Acción</th><th>Status</th><th>Destino</th><th>Issues</th><th>Recomendación</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="protected"><div class="section-title"><div><h3>Top URLs protegidas</h3><p>URLs que no deben romperse durante la migración.</p></div></div><div class="card"><div class="tablebox"><table id="topTable"><thead><tr><th>URL</th><th>Clics</th><th>Impresiones</th><th>Posición</th><th>KW</th><th>Title</th><th>Notas</th></tr></thead><tbody></tbody></table></div></div></section>
+    <section id="checklist"><div class="section-title"><div><h3>Checklist ejecución</h3><p>Seguimiento por fase.</p></div></div><div class="kanban" id="kanban"></div></section>
+
+    <section id="setup">
+      <div class="section-title"><div><h3>Setup técnico</h3><p>Cómo enlazar Google Sheets con este tablero.</p></div></div>
+      <div class="card report-text">
+        <ol>
+          <li>Convertí el Excel en <strong>Google Sheet real</strong>.</li>
+          <li>Abrí <strong>Extensiones → Apps Script</strong>.</li>
+          <li>Pegá <code>apps-script/Code.gs</code>.</li>
+          <li>Publicá como <strong>Web App</strong> con acceso “Anyone with the link”.</li>
+          <li>Copiá la URL <code>/exec</code> en <code>config.js</code>, dentro de <code>DATA_URL</code>.</li>
+          <li>Abrí <code>index.html</code> o subilo a Cloudflare Pages / Netlify.</li>
+        </ol>
+      </div>
+    </section>
+
+    <div class="footer">HitOcean SEO Control Center · Sistema automatizado</div>
+  </main>
+</div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
