@@ -12,6 +12,7 @@
     { "src": "/api/ga4/(.*)", "dest": "backend/api/ga4.js" },
     { "src": "/api/clarity", "dest": "backend/api/clarity.js" },
     { "src": "/api/clarity/(.*)", "dest": "backend/api/clarity.js" },
+    { "src": "/api/debug", "dest": "backend/api/debug.js" },
     { "src": "/api/dashboard", "dest": "backend/api/dashboard.js" },
     { "src": "/api/trends", "dest": "backend/api/trends.js" },
     { "src": "/api/alerts", "dest": "backend/api/alerts.js" },
