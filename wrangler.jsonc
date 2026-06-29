@@ -11,10 +11,12 @@
       "*.md",
       "Code.gs",
       "wrangler.jsonc",
-      "vercel.json"
+      "vercel.json",
+      "package.json",
+      "bun.lock"
     ]
   },
   "observability": {
-    "enabled": true
+    "enabled": false
   }
 }
