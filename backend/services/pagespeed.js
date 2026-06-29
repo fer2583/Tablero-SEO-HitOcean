@@ -34,7 +34,7 @@ export async function auditPage(url, strategy = 'mobile') {
 
     if (response.status === 429) {
       return {
-        error: 'Límite de cuota diaria excedido. Agregá GOOGLE_API_KEY en Vercel para más cuota.',
+        error: 'La cuota diaria de PageSpeed Insights se agotó. Volvé a intentar mañana o configurá una API Key propia.',
         url,
         strategy,
         scores: {},

@@ -417,7 +417,12 @@ function renderPageSpeed(s) {
   }
 
   if (mobile.error && desktop.error) {
-    return `<div class="card"><p class="muted" style="padding:40px;text-align:center;color:var(--red)">❌ Error al auditar: ${esc(mobile.error)}</p></div>`;
+    return `<div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:12px">🚫</div>
+      <div style="font-size:16px;font-weight:900;color:var(--red);margin-bottom:8px">Auditoría no disponible</div>
+      <p class="muted" style="max-width:400px;margin:0 auto;line-height:1.6">${esc(mobile.error)}</p>
+      <p class="muted" style="margin-top:16px;font-size:11px">Para habilitarlo: Google Cloud Console → Habilitar PageSpeed Insights API → Crear API Key → Agregarla como <code>GOOGLE_API_KEY</code> en Vercel.</p>
+    </div>`;
   }
 
   const scoreCard = (data, label) => {

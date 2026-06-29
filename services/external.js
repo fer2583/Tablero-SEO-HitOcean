@@ -74,12 +74,16 @@ export async function fetchAlerts(mode = 'active') {
 
 /**
  * Fetch de PageSpeed Insights (homepage)
+ * Usa ruta directa porque Vercel no redeployó la ruta custom
  */
 export async function fetchPageSpeed(strategy = 'mobile') {
-  const res = await fetch(`${BACKEND}/api/pagespeed?mode=homepage&strategy=${strategy}`, {
+  const res = await fetch(`${BACKEND}/backend/api/pagespeed.js?mode=homepage&strategy=${strategy}`, {
     cache: 'no-store',
   });
-  if (!res.ok) throw new Error(`PageSpeed API: ${res.status}`);
+  if (!res.ok) {
+    console.warn('[PageSpeed] HTTP', res.status);
+    return { error: `HTTP ${res.status}`, scores: {}, issues: { errors: [], warnings: [], passed: [] } };
+  }
   return res.json();
 }
 
