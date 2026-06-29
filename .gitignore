@@ -1,6 +1,13 @@
 # Node
 node_modules/
 npm-debug.log*
+bun.lock
+bun.lockb
+
+# Wrangler / Cloudflare
+.wrangler/
+wrangler.toml
+*.wrangler*
 
 # Backend
 backend/.env
