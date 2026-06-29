@@ -21,12 +21,10 @@ export async function auditPage(url, strategy = 'mobile') {
       url,
       strategy,
     });
-    // Pedir todas las categorías explícitamente
-    ['PERFORMANCE', 'ACCESSIBILITY', 'BEST_PRACTICES', 'SEO'].forEach(c => params.append('category', c));
     if (API_KEY) params.set('key', API_KEY);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
     const response = await fetch(`${BASE_URL}?${params}`, {
       headers: { 'Accept': 'application/json' },
