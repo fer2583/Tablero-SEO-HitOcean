@@ -171,6 +171,11 @@ export function render(s) {
     return st.dir === 'desc' ? ' ↓' : ' ↑';
   };
 
+  // Download CSV helper
+  const downloadCSV = (data, columns, filename) => {
+    return `<span class="csv-btn" data-csv='${esc(JSON.stringify({ data: data.slice(0, 500), columns, filename }))}'>📥 CSV</span>`;
+  };
+
   const makeSortable = (table, col, label) =>
     `<th class="sortable" data-sort-table="${table}" data-sort-col="${col}">${label}${sortArrow(table, col)}</th>`;
 
@@ -192,7 +197,7 @@ export function render(s) {
       <div class="grid2" style="margin-top:0">
         <!-- Top Queries -->
         <div class="card">
-          <div class="chartTitle">🏆 Top Queries <span class="badge">${fmt(queries.length)}</span></div>
+          <div class="chartTitle">🏆 Top Queries <span class="badge">${fmt(queries.length)}</span> ${downloadCSV(queriesSorted.slice(0, 500).map(q => ({ query: q.query, clicks: q.clicks, impressions: q.impressions, ctr: fmtPct(q.ctr), position: fmtPos(q.position) })), ['query', 'clicks', 'impressions', 'ctr', 'position'], 'top-queries')}</div>
           <div class="table-scroll">
             <table class="seo-table" data-sort-table="queries">
               <thead><tr>
@@ -210,7 +215,7 @@ export function render(s) {
 
         <!-- Top Pages -->
         <div class="card">
-          <div class="chartTitle">📄 Top Páginas <span class="badge">${fmt(pages.length)}</span></div>
+          <div class="chartTitle">📄 Top Páginas <span class="badge">${fmt(pages.length)}</span> ${downloadCSV(pagesSorted.slice(0, 500).map(p => ({ url: shortUrl(p.url), clicks: p.clicks, impressions: p.impressions, ctr: fmtPct(p.ctr), position: fmtPos(p.position) })), ['url', 'clicks', 'impressions', 'ctr', 'position'], 'top-paginas')}</div>
           <div class="table-scroll">
             <table class="seo-table" data-sort-table="pages">
               <thead><tr>
@@ -231,7 +236,7 @@ export function render(s) {
     <!-- ─── Queries → URLs View ─── -->
     <div class="seo-panel hidden" id="seo-queries">
       <div class="card" style="margin-top:12px">
-        <div class="chartTitle">🔗 Qué consultas traen tráfico a cada URL <span class="badge">${fmt(intersections.length)}</span></div>
+        <div class="chartTitle">🔗 Qué consultas traen tráfico a cada URL <span class="badge">${fmt(intersections.length)}</span> ${downloadCSV(interSorted.map(d => ({ url: d.url, query: d.query, clicks: d.clicks, impressions: d.impressions, ctr: fmtPct(d.ctr), position: fmtPos(d.position) })), ['url', 'query', 'clicks', 'impressions', 'ctr', 'position'], 'query-url-mapping')}</div>
         <div class="table-scroll">
           <table class="seo-table" data-sort-table="intersections">
             <thead><tr>
@@ -292,7 +297,7 @@ export function render(s) {
         </div>
       </div>
       ${quickWins.length > 0 ? `<div class="card" style="margin-top:12px">
-        <div class="chartTitle">⚡ Quick Wins — mejora el CTR de estas páginas</div>
+        <div class="chartTitle">⚡ Quick Wins — mejora el CTR de estas páginas ${downloadCSV(quickWins.map(p => ({ url: shortUrl(p.url), impressions: p.impressions, clicks: p.clicks, ctr: fmtPct(p.ctr), position: fmtPos(p.position), potential_gain: Math.round(p.impressions * 0.05 - p.clicks) })), ['url', 'impressions', 'clicks', 'ctr', 'position', 'potential_gain'], 'quick-wins')}</div>
         <div class="quickwins-grid">${quickWins.map(p => {
           const potential = Math.round(p.impressions * 0.05 - p.clicks);
           return `<div class="quickwin-item">
@@ -320,6 +325,38 @@ export function bindComponent() {
       document.querySelectorAll('.seo-panel').forEach(p => p.classList.add('hidden'));
       const panel = document.getElementById(`seo-${tab.dataset.seoTab}`);
       if (panel) panel.classList.remove('hidden');
+    };
+  });
+
+  // CSV export buttons
+  document.querySelectorAll('.csv-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      try {
+        const spec = JSON.parse(btn.dataset.csv);
+        const { data, columns, filename } = spec;
+        const header = columns.join(',');
+        const rows = data.map(row => columns.map(col => {
+          const val = row[col];
+          const str = String(val == null ? '' : val);
+          // Escapar comillas dobles y rodear con comillas si contiene coma o comillas
+          return str.includes(',') || str.includes('"') || str.includes('\n')
+            ? '"' + str.replace(/"/g, '""') + '"'
+            : str;
+        }).join(','));
+        const csv = '\uFEFF' + header + '\n' + rows.join('\n'); // BOM UTF-8 para Excel
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `seo-${filename}-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('[CSV] Error:', err);
+      }
     };
   });
 
