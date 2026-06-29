@@ -1,8 +1,9 @@
 // =============================================================
 // Autenticación Google Service Account
+// Soporta: archivo local o variable de entorno GOOGLE_CREDENTIALS
 // =============================================================
 import { google } from 'googleapis';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,26 +14,60 @@ let gscAuth = null;
 let gtmAuth = null;
 
 /**
+ * Obtiene las credenciales de Service Account
+ * Prioridad:
+ *   1. Variable de entorno GOOGLE_CREDENTIALS (JSON string)
+ *   2. Archivo local backend/credentials/ga4-service-account.json
+ */
+function getServiceAccountKey() {
+  // Opción 1: Variable de entorno
+  const envCreds = process.env.GOOGLE_CREDENTIALS;
+  if (envCreds) {
+    try {
+      return JSON.parse(envCreds);
+    } catch (e) {
+      console.warn('[Auth] GOOGLE_CREDENTIALS env var is not valid JSON, trying file...');
+    }
+  }
+
+  // Opción 2: archivo local
+  const paths = [
+    process.env.GOOGLE_SERVICE_ACCOUNT_PATH,
+    join(__dirname, '..', 'credentials', 'ga4-service-account.json'),
+    join(process.cwd(), 'credentials', 'ga4-service-account.json'),
+  ];
+
+  for (const p of paths) {
+    if (!p) continue;
+    try {
+      if (existsSync(p)) {
+        return JSON.parse(readFileSync(p, 'utf-8'));
+      }
+    } catch (e) {
+      // seguir
+    }
+  }
+
+  return null;
+}
+
+/**
  * Obtiene auth para GA4 / GSC
- * Ambas usan la misma Service Account (analytics-hitocean)
  */
 export function getGoogleAuth(scopes = []) {
-  const keyPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH
-    || join(__dirname, '..', 'credentials', 'ga4-service-account.json');
-
-  try {
-    const key = JSON.parse(readFileSync(keyPath, 'utf-8'));
-    return new google.auth.JWT(
-      key.client_email,
-      null,
-      key.private_key,
-      scopes,
-      null
-    );
-  } catch (err) {
-    console.error('[Auth] Error loading service account:', err.message);
+  const key = getServiceAccountKey();
+  if (!key) {
+    console.error('[Auth] No service account credentials found');
     return null;
   }
+
+  return new google.auth.JWT(
+    key.client_email,
+    null,
+    key.private_key,
+    scopes,
+    null
+  );
 }
 
 /**
@@ -58,9 +93,11 @@ export function getGA4Auth() {
  */
 export function getGTMAuth() {
   if (gtmAuth) return gtmAuth;
-  const keyPath = join(__dirname, '..', 'credentials', 'gtm-service-account.json');
+
+  const key = getServiceAccountKey();
+  if (!key) return null;
+
   try {
-    const key = JSON.parse(readFileSync(keyPath, 'utf-8'));
     gtmAuth = new google.auth.JWT(
       key.client_email,
       null,
@@ -70,7 +107,7 @@ export function getGTMAuth() {
     );
     return gtmAuth;
   } catch (err) {
-    console.warn('[Auth] GTM key not found, skipping');
+    console.warn('[Auth] GTM auth error:', err.message);
     return null;
   }
 }
