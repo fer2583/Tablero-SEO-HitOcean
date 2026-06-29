@@ -1,8 +1,7 @@
 // =============================================================
 // API Endpoint: /api/alerts
-// Alertas automáticas del dashboard
+// Alertas automáticas desde detección en vivo
 // =============================================================
-import { query } from '../db/client.js';
 import { detectAlerts } from '../services/gsc.js';
 
 export default async function handler(req, res) {
@@ -20,31 +19,22 @@ export default async function handler(req, res) {
 
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const mode = searchParams.get('mode') || 'active';
-  const limit = parseInt(searchParams.get('limit')) || 20;
 
   try {
-    let alerts;
+    let alerts = [];
 
-    if (mode === 'detect') {
-      // Ejecutar detección de alertas en vivo
-      alerts = await detectAlerts();
-    } else {
-      // Alertas desde DB
-      const result = await query(`
-        SELECT * FROM alerts 
-        WHERE resolved = false 
-        ORDER BY 
-          CASE severity 
-            WHEN 'critical' THEN 1 
-            WHEN 'high' THEN 2 
-            WHEN 'medium' THEN 3 
-            WHEN 'low' THEN 4 
-          END,
-          date DESC
-        LIMIT $1
-      `, [limit]);
-      alerts = result.rows;
+    if (mode === 'detect' || mode === 'active') {
+      // Detección en vivo desde GSC
+      try {
+        const result = await detectAlerts();
+        alerts = result?.alerts || [];
+      } catch (e) {
+        console.warn('[Alerts] Detection error:', e.message);
+      }
     }
+
+    // Limitar cantidad de alertas
+    alerts = alerts.slice(0, 50);
 
     res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders });
     res.end(JSON.stringify({ ok: true, count: alerts.length, alerts }));

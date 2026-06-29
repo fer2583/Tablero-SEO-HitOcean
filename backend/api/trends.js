@@ -1,8 +1,10 @@
 // =============================================================
 // API Endpoint: /api/trends
-// Datos de tendencia histórica (7, 30, 90 días)
+// Tendencia histórica desde APIs en vivo (GSC, GA4, Clarity)
 // =============================================================
-import { query } from '../db/client.js';
+import { fetchGSCTrends } from '../services/gsc.js';
+import { fetchGA4Daily } from '../services/ga4.js';
+import { fetchClarityDaily } from '../services/clarity.js';
 
 export default async function handler(req, res) {
   const corsHeaders = {
@@ -23,55 +25,75 @@ export default async function handler(req, res) {
   const start = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
 
   try {
-    // GSC trends por día
-    const gscTrend = await query(`
-      SELECT 
-        date,
-        SUM(clicks) as clicks,
-        SUM(impressions) as impressions,
-        CASE WHEN SUM(impressions) > 0 
-          THEN ROUND(SUM(clicks)::FLOAT / SUM(impressions) * 100, 2)
-          ELSE 0 END as ctr
-      FROM gsc_daily 
-      WHERE date >= $1 AND date <= $2
-      GROUP BY date
-      ORDER BY date ASC
-    `, [start, end]);
+    console.log(`[Trends] Fetching ${days} days from ${start} to ${end}`);
 
-    // GA4 trends por día
-    const ga4Trend = await query(`
-      SELECT 
-        date,
-        SUM(users) as users,
-        SUM(sessions) as sessions,
-        SUM(page_views) as page_views
-      FROM ga4_daily 
-      WHERE date >= $1 AND date <= $2
-      GROUP BY date
-      ORDER BY date ASC
-    `, [start, end]);
+    // ─── GSC trends ───────────────────────────────────
+    let gsc = [];
+    try {
+      const gscData = await fetchGSCTrends({ days });
+      // GSC retorna { byUrl, byQuery, detailed } con rows que tienen { date, clicks, impressions, ctr }
+      const allRows = [
+        ...(gscData.byUrl || []),
+        ...(gscData.byQuery || []),
+        ...(gscData.detailed || []),
+      ];
+      // Agrupar por fecha
+      const byDate = {};
+      for (const row of allRows) {
+        if (!row.date) continue;
+        if (!byDate[row.date]) byDate[row.date] = { clicks: 0, impressions: 0 };
+        byDate[row.date].clicks += row.clicks || 0;
+        byDate[row.date].impressions += row.impressions || 0;
+      }
+      gsc = Object.entries(byDate)
+        .map(([date, vals]) => ({
+          date,
+          clicks: vals.clicks,
+          impressions: vals.impressions,
+          ctr: vals.impressions > 0 ? +((vals.clicks / vals.impressions) * 100).toFixed(2) : 0,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e) {
+      console.warn('[Trends] GSC error:', e.message);
+    }
 
-    // Clarity trends por día
-    const clarityTrend = await query(`
-      SELECT 
-        date,
-        SUM(page_views) as page_views,
-        SUM(recordings) as recordings,
-        SUM(rage_clicks) as rage_clicks
-      FROM clarity_daily 
-      WHERE date >= $1 AND date <= $2
-      GROUP BY date
-      ORDER BY date ASC
-    `, [start, end]);
+    // ─── GA4 trends ───────────────────────────────────
+    let ga4 = [];
+    try {
+      const ga4Data = await fetchGA4Daily({ days });
+      const daily = Array.isArray(ga4Data) ? [] : (ga4Data.daily || []);
+      ga4 = daily.map(d => ({
+        date: d.date || '',
+        users: parseInt(d.totalUsers) || 0,
+        sessions: parseInt(d.sessions) || 0,
+        page_views: parseInt(d.screenPageViews) || 0,
+      })).filter(d => d.date).sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e) {
+      console.warn('[Trends] GA4 error:', e.message);
+    }
+
+    // ─── Clarity trends ───────────────────────────────
+    let clarity = [];
+    try {
+      const clarityData = await fetchClarityDaily({ days });
+      clarity = (clarityData?.daily || []).map(d => ({
+        date: d.date || '',
+        page_views: d.page_views || 0,
+        recordings: d.recordings || 0,
+        rage_clicks: d.rage_clicks || 0,
+      })).filter(d => d.date).sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e) {
+      console.warn('[Trends] Clarity error:', e.message);
+    }
 
     res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders });
     res.end(JSON.stringify({
       ok: true,
       days,
       period: { start, end },
-      gsc: gscTrend.rows,
-      ga4: ga4Trend.rows,
-      clarity: clarityTrend.rows,
+      gsc,
+      ga4,
+      clarity,
     }));
   } catch (err) {
     console.error('[Trends API]', err.message);
