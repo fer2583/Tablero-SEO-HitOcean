@@ -21,10 +21,12 @@ export async function auditPage(url, strategy = 'mobile') {
       url,
       strategy,
     });
+    // Pedir todas las categorías (por defecto solo trae performance)
+    ['ACCESSIBILITY', 'BEST_PRACTICES', 'PERFORMANCE', 'SEO'].forEach(c => params.append('category', c));
     if (API_KEY) params.set('key', API_KEY);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout (Google API es lenta con categorías múltiples)
 
     const response = await fetch(`${BASE_URL}?${params}`, {
       headers: { 'Accept': 'application/json' },
