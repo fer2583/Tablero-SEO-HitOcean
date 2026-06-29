@@ -16,6 +16,8 @@
     { "src": "/api/dashboard", "dest": "backend/api/dashboard.js" },
     { "src": "/api/trends", "dest": "backend/api/trends.js" },
     { "src": "/api/alerts", "dest": "backend/api/alerts.js" },
+    { "src": "/api/pagespeed", "dest": "backend/api/pagespeed.js" },
+    { "src": "/api/pagespeed/(.*)", "dest": "backend/api/pagespeed.js" },
     { "src": "/api/cron/(.*)", "dest": "backend/api/cron.js" }
   ]
 }
