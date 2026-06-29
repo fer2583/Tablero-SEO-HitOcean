@@ -2,7 +2,7 @@
 // SEO Analytics — Queries, Páginas, Insights por plataforma
 // =============================================================
 
-import { fmt, esc, sparkline, trendChart, calcPeriodChange, changeBadge } from '../services/utils.js';
+import { sparkline, trendChart, calcPeriodChange, changeBadge } from '../services/utils.js';
 
 export const meta = {
   title: 'SEO Analytics',
