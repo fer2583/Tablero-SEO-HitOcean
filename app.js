@@ -1,4 +1,4 @@
-import{CONFIG}from'./config.js';import{fetchDashboardData,saveRowUpdate}from'./services/api.js';import{applyGlobalFilters,PRESETS}from'./services/filters.js';import{esc,n,num,fmt}from'./services/utils.js';import{fetchDashboard as fetchLiveDashboard,fetchTrends,fetchAlerts,fetchGSC}from'./services/external.js';import*as Executive from'./components/Executive.js';import*as Analytics from'./components/Analytics.js';import*as Operation from'./components/Operation.js';import*as Master from'./components/Master.js';import*as Metadata from'./components/Metadata.js';import*as Keywords from'./components/Keywords.js';import*as Redirects from'./components/Redirects.js';import*as Protected from'./components/Protected.js';import*as Checklist from'./components/Checklist.js';import*as Setup from'./components/Setup.js';import*as SEO from'./components/SEO.js';
+import{CONFIG}from'./config.js';import{fetchDashboardData,saveRowUpdate}from'./services/api.js';import{applyGlobalFilters,PRESETS}from'./services/filters.js';import{esc,n,num,fmt}from'./services/utils.js';import{fetchDashboard as fetchLiveDashboard,fetchTrends,fetchAlerts,fetchGSC,fetchPageSpeed}from'./services/external.js';import*as Executive from'./components/Executive.js';import*as Analytics from'./components/Analytics.js';import*as Operation from'./components/Operation.js';import*as Master from'./components/Master.js';import*as Metadata from'./components/Metadata.js';import*as Keywords from'./components/Keywords.js';import*as Redirects from'./components/Redirects.js';import*as Protected from'./components/Protected.js';import*as Checklist from'./components/Checklist.js';import*as Setup from'./components/Setup.js';import*as SEO from'./components/SEO.js';
 const C={executive:Executive,analytics:Analytics,operation:Operation,master:Master,metadata:Metadata,keywords:Keywords,redirects:Redirects,protected:Protected,checklist:Checklist,setup:Setup,seo:SEO};const s={currentView:'executive',activePreset:'all',data:{master:[],metadata:[],keywords:[],redirects:[],protected:[],issues:[],checklist:[]},filtered:[],selected:null,checkState:{},filters:{search:'',priority:'',action:'',type:'',meta:'',qa:'',http:''},external:{kpis:{},trends:{gsc:[],ga4:[],clarity:[]},gscData:{},alerts:[],lastUpdated:null,loading:false,daysRange:180}};const $=id=>document.getElementById(id);const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2400)};const setStatus=(m,t='loading')=>{$('status').className='status '+t;$('status').textContent=m};function setTheme(t){localStorage.setItem('hito_theme',t);document.body.classList.toggle('dark',t==='dark');document.querySelectorAll('.theme button').forEach(b=>b.classList.toggle('active',b.dataset.theme===t))}
 function presets(){ $('presets').innerHTML=Object.entries(PRESETS).map(([k,p])=>`<button class="chip ${s.activePreset===k?'active':''}" data-preset="${k}">${p.label}</button>`).join('')}
 function setView(v){s.currentView=v;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));render()}
@@ -34,17 +34,20 @@ async function loadExternalData() {
   const days = s.external.daysRange;
 
   try {
-    const [dashboard, trends, alerts, gscRaw] = await Promise.all([
+    const [dashboard, trends, alerts, gscRaw, pagespeedMobile, pagespeedDesktop] = await Promise.all([
       fetchLiveDashboard(days),
       fetchTrends(days),
       fetchAlerts('active'),
       fetchGSC({ days, mode: 'trends' }).catch(() => ({ byQuery: [], byUrl: [], detailed: [] })),
+      fetchPageSpeed('mobile').catch(() => ({ error: 'No disponible', scores: {} })),
+      fetchPageSpeed('desktop').catch(() => ({ error: 'No disponible', scores: {} })),
     ]);
 
     s.external.kpis = dashboard.kpis;
     s.external.trends = trends;
     s.external.alerts = alerts.alerts || [];
     s.external.gscData = gscRaw || { byQuery: [], byUrl: [], detailed: [] };
+    s.external.pagespeed = { mobile: pagespeedMobile, desktop: pagespeedDesktop };
     s.external.lastUpdated = new Date();
     s.external.loading = false;
 

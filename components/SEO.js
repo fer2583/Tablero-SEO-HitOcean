@@ -182,6 +182,7 @@ export function render(s) {
       <button class="seo-tab active" data-seo-tab="gsc">📊 Google Search Console</button>
       <button class="seo-tab" data-seo-tab="queries">🔗 Queries → URLs</button>
       <button class="seo-tab" data-seo-tab="insights">💡 Insights</button>
+      <button class="seo-tab" data-seo-tab="audit">🚀 PageSpeed Audit</button>
     </div>
 
     <!-- ─── GSC View ─── -->
@@ -246,6 +247,11 @@ export function render(s) {
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- ─── PageSpeed Audit View ─── -->
+    <div class="seo-panel hidden" id="seo-audit">
+      ${renderPageSpeed(s)}
     </div>
 
     <!-- ─── Insights View ─── -->
@@ -398,6 +404,89 @@ function sortData(data, col, dir) {
     return dir === 'desc' ? vb - va : va - vb;
   });
   return sorted;
+}
+
+// ─── PageSpeed Render ───────────────────────────
+function renderPageSpeed(s) {
+  const ps = s.external.pagespeed || {};
+  const mobile = ps.mobile || {};
+  const desktop = ps.desktop || {};
+
+  if (!mobile.scores && !desktop.scores) {
+    return `<div class="card"><p class="muted" style="padding:40px;text-align:center">⏳ Apretá 📡 Live para auditar el sitio con PageSpeed Insights</p></div>`;
+  }
+
+  if (mobile.error && desktop.error) {
+    return `<div class="card"><p class="muted" style="padding:40px;text-align:center;color:var(--red)">❌ Error al auditar: ${esc(mobile.error)}</p></div>`;
+  }
+
+  const scoreCard = (data, label) => {
+    const sc = data.scores || {};
+    const issues = data.issues || { errors: [], warnings: [], passed: [] };
+    const perf = Math.round((sc.performance || 0) * 100);
+    const a11y = Math.round((sc.accessibility || 0) * 100);
+    const bp = Math.round((sc['best-practices'] || 0) * 100);
+    const seo = Math.round((sc.seo || 0) * 100);
+
+    const scoreClass = s => s >= 90 ? 'green' : s >= 50 ? 'amber' : 'red';
+
+    return `<div class="card" style="margin-top:12px">
+      <div class="chartTitle">${label}</div>
+      <div class="ps-scores">
+        ${[
+          { key: 'performance', label: 'Rendimiento', val: perf },
+          { key: 'accessibility', label: 'Accesibilidad', val: a11y },
+          { key: 'best-practices', label: 'Buenas prácticas', val: bp },
+          { key: 'seo', label: 'SEO', val: seo },
+        ].map(s => `
+          <div class="ps-score">
+            <div class="ps-circle ${scoreClass(s.val)}">
+              <svg viewBox="0 0 36 36"><path class="ps-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/><path class="ps-fill ${scoreClass(s.val)}" stroke-dasharray="${s.val}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/></svg>
+              <span>${s.val}</span>
+            </div>
+            <small>${s.label}</small>
+          </div>`).join('')}
+      </div>
+
+      ${issues.errors.length > 0 ? `
+        <div style="margin-top:16px">
+          <div class="ps-section-title"><span class="ps-badge error">${issues.errors.length} errores</span> Prioritarios</div>
+          ${issues.errors.slice(0, 10).map(a => `
+            <div class="ps-issue error">
+              <div class="ps-issue-head">
+                <strong>${esc(a.title)}</strong>
+                ${a.displayValue ? `<span class="ps-issue-val">${esc(a.displayValue)}</span>` : ''}
+              </div>
+              <div class="ps-issue-desc">${esc(a.description)}</div>
+              <div class="ps-issue-fix">💡 ${esc(a.recommendations)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+
+      ${issues.warnings.length > 0 ? `
+        <div style="margin-top:16px">
+          <div class="ps-section-title"><span class="ps-badge warning">${issues.warnings.length} oportunidades</span> Para mejorar</div>
+          ${issues.warnings.slice(0, 8).map(a => `
+            <div class="ps-issue warning">
+              <div class="ps-issue-head">
+                <strong>${esc(a.title)}</strong>
+                ${a.displayValue ? `<span class="ps-issue-val">${esc(a.displayValue)}</span>` : ''}
+              </div>
+              <div class="ps-issue-desc">${esc(a.description)}</div>
+              <div class="ps-issue-fix">💡 ${esc(a.recommendations)}</div>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>`;
+  };
+
+  return `
+    <div class="ps-header">
+      <p class="muted" style="margin-bottom:8px">Auditoría Lighthouse de <strong>hitocean.com</strong> — datos frescos de Google PageSpeed Insights</p>
+    </div>
+    <div class="grid2" style="margin-top:0">
+      ${scoreCard(mobile, '📱 Mobile')}
+      ${scoreCard(desktop, '💻 Desktop')}
+    </div>
+  `;
 }
 
 // ─── Helpers ────────────────────────────────────

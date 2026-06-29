@@ -73,6 +73,17 @@ export async function fetchAlerts(mode = 'active') {
 }
 
 /**
+ * Fetch de PageSpeed Insights (homepage)
+ */
+export async function fetchPageSpeed(strategy = 'mobile') {
+  const res = await fetch(`${BACKEND}/api/pagespeed?mode=homepage&strategy=${strategy}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`PageSpeed API: ${res.status}`);
+  return res.json();
+}
+
+/**
  * Formatear número para display
  */
 export function fmtNum(n) {
