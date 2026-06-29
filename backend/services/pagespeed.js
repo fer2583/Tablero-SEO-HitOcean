@@ -21,6 +21,8 @@ export async function auditPage(url, strategy = 'mobile') {
       url,
       strategy,
     });
+    // Pedir todas las categorías explícitamente
+    ['PERFORMANCE', 'ACCESSIBILITY', 'BEST_PRACTICES', 'SEO'].forEach(c => params.append('category', c));
     if (API_KEY) params.set('key', API_KEY);
 
     const controller = new AbortController();
@@ -80,6 +82,9 @@ function parseLighthouse(data, url, strategy) {
   const lighthouse = data?.lighthouseResult || {};
   const categories = lighthouse?.categories || {};
   const audits = lighthouse?.audits || {};
+
+  // Debug: log categorías disponibles
+  console.log(`[PageSpeed] Categories for ${url} (${strategy}):`, Object.keys(categories));
 
   // Scores por categoría (0-1)
   const scores = {};
