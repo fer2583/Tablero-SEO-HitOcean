@@ -2,6 +2,8 @@
 // SEO Analytics — Queries, Páginas, Insights por plataforma
 // =============================================================
 
+import { fmt, esc, sparkline, trendChart, calcPeriodChange, changeBadge } from '../services/utils.js';
+
 export const meta = {
   title: 'SEO Analytics',
   subtitle: 'Rendimiento orgánico: consultas, URLs, posición y oportunidades.',
@@ -58,6 +60,27 @@ export function render(s) {
     .sort((a, b) => b.impressions - a.impressions)
     .slice(0, 15);
 
+  // ── Trends diarios ────────────────────────────────
+  const trends = ext.trends || {};
+  const gscTrends = trends.gsc || [];
+
+  // Posición promedio por día (desde datos detallados)
+  const posByDate = {};
+  const detailed = gscData.detailed || [];
+  for (const r of detailed) {
+    if (!r.date) continue;
+    if (!posByDate[r.date]) posByDate[r.date] = { sum: 0, count: 0 };
+    posByDate[r.date].sum += (r.position || 0);
+    posByDate[r.date].count++;
+  }
+  const posTrend = Object.entries(posByDate)
+    .map(([date, v]) => ({ date, position: v.sum / v.count }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // ── Period comparison ─────────────────────────────
+  const clicksChange = calcPeriodChange(gscTrends, 'clicks');
+  const imprChange = calcPeriodChange(gscTrends, 'impressions');
+
   // ── Brand vs Non-brand ────────────────────────────
   const brandTerms = ['hit ocean', 'hitocean', 'hito', 'hit ocean empresa', 'hit ocean servicios', 'hit ocean soluciones'];
   let brandClicks = 0, brandImpr = 0, nonBrandClicks = 0, nonBrandImpr = 0;
@@ -70,13 +93,13 @@ export function render(s) {
 
   // ── Render ────────────────────────────────────────
 
-  // KPIs superiores
+  // KPIs superiores con sparklines y cambio vs período anterior
   const kpis = `
     <div class="kpis" style="grid-template-columns:repeat(6,1fr);margin-bottom:16px">
       <div class="kpi blue"><span>Consultas únicas</span><strong>${fmt(queries.length)}</strong><small>en ${days} días</small></div>
       <div class="kpi teal"><span>Páginas indexadas</span><strong>${fmt(pages.length)}</strong><small>con tráfico orgánico</small></div>
-      <div class="kpi green"><span>Clicks totales</span><strong>${fmt(totalClicks)}</strong><small>+${fmt(brandClicks)} brand / ${fmt(nonBrandClicks)} no-brand</small></div>
-      <div class="kpi purple"><span>Impresiones</span><strong>${fmt(totalImpr)}</strong><small>en Google</small></div>
+      <div class="kpi green"><span>Clicks totales</span><strong>${fmt(totalClicks)}</strong><small>${clicksChange ? changeBadge(clicksChange.change) : ''} ${fmt(brandClicks)} brand</small>${sparkline(gscTrends.map(d => ({ value: d.clicks })), { color: 'var(--green)' })}</div>
+      <div class="kpi purple"><span>Impresiones</span><strong>${fmt(totalImpr)}</strong><small>${imprChange ? changeBadge(imprChange.change) : ''} en Google</small>${sparkline(gscTrends.map(d => ({ value: d.impressions })), { color: 'var(--purple)' })}</div>
       <div class="kpi amber"><span>CTR promedio</span><strong>${fmtPct(avgCTR)}</strong><small>${fmtPct(brandPct/100)} es brand</small></div>
       <div class="kpi red"><span>Posición media</span><strong>${fmtPos(avgPos)}</strong><small>ponderada por clicks</small></div>
     </div>`;
@@ -230,6 +253,30 @@ export function render(s) {
             </table>
           </div>
         </div>
+      </div>
+
+      <!-- Trend Chart debajo de las tablas -->
+      <div class="card" style="margin-top:12px">
+        <div class="chartTitle">📈 Tendencia diaria — Clicks e Impresiones</div>
+        <div style="margin-top:8px">
+          ${trendChart(gscTrends, {
+            lines: [
+              { key: 'clicks', color: 'var(--green)', label: 'Clicks' },
+              { key: 'impressions', color: 'var(--primary)', label: 'Impresiones' },
+            ],
+            showLegend: true,
+          })}
+        </div>
+        ${posTrend.length > 2 ? `
+        <div class="chartTitle" style="margin-top:16px">📉 Evolución de posición promedio</div>
+        <div style="margin-top:8px">
+          ${trendChart(posTrend, {
+            lines: [
+              { key: 'position', color: 'var(--red)', label: 'Posición media' },
+            ],
+            showLegend: false,
+          })}
+        </div>` : ''}
       </div>
     </div>
 
@@ -464,6 +511,7 @@ function renderPageSpeed(s) {
 
   const scoreCard = (data, label) => {
     const sc = data.scores || {};
+    const metrics = data.metrics || {};
     const issues = data.issues || { errors: [], warnings: [], passed: [] };
     const perf = Math.round((sc.performance || 0) * 100);
     const a11y = Math.round((sc.accessibility || 0) * 100);
@@ -471,6 +519,37 @@ function renderPageSpeed(s) {
     const seo = Math.round((sc.seo || 0) * 100);
 
     const scoreClass = s => s >= 90 ? 'green' : s >= 50 ? 'amber' : 'red';
+
+    // Métricas clave
+    const metricLabels = {
+      'first-contentful-paint': { label: 'FCP', unit: 's' },
+      'largest-contentful-paint': { label: 'LCP', unit: 's' },
+      'total-blocking-time': { label: 'TBT', unit: 'ms' },
+      'cumulative-layout-shift': { label: 'CLS', unit: '' },
+      'speed-index': { label: 'Speed Index', unit: 's' },
+      'interactive': { label: 'TTI', unit: 's' },
+    };
+    const metricCards = Object.entries(metricLabels)
+      .filter(([id]) => metrics[id]?.value != null)
+      .map(([id, meta]) => {
+        const m = metrics[id];
+        let displayVal = m.display;
+        // Si no tiene displayValue bonito, formatear el numericValue
+        if (!displayVal && m.value != null) {
+          const v = m.value;
+          if (id === 'cumulative-layout-shift') displayVal = v.toFixed(2);
+          else if (id === 'total-blocking-time') displayVal = Math.round(v) + ' ms';
+          else displayVal = (v / 1000).toFixed(1) + ' s';
+        }
+        // Indicador de salud: verde ≥90, amarillo ≥50, rojo
+        const pct = m.score != null ? Math.round(m.score * 100) : -1;
+        const cls = pct >= 90 ? 'green' : pct >= 50 ? 'amber' : pct < 0 ? '' : 'red';
+        return `<div class="ps-metric ${cls}">
+          <small>${meta.label}</small>
+          <strong>${esc(displayVal)}</strong>
+          ${pct >= 0 ? `<span class="ps-metric-score" style="color:var(--${cls})">${pct}</span>` : ''}
+        </div>`;
+      }).join('');
 
     return `<div class="card" style="margin-top:12px">
       <div class="chartTitle">${label}</div>
@@ -489,6 +568,13 @@ function renderPageSpeed(s) {
             <small>${s.label}</small>
           </div>`).join('')}
       </div>
+      ${metricCards.length > 0 ? `
+      <div class="ps-metrics">
+        <div class="ps-section-title" style="margin-top:12px;margin-bottom:8px">⏱️ Métricas clave (Web Vitals)</div>
+        <div class="ps-metric-grid">
+          ${metricCards}
+        </div>
+      </div>` : ''}
 
       ${issues.errors.length > 0 ? `
         <div style="margin-top:16px">

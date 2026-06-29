@@ -132,10 +132,25 @@ function parseLighthouse(data, url, strategy) {
   issues.errors = issues.errors.slice(0, 20);
   issues.warnings = issues.warnings.slice(0, 15);
 
+  // Extraer métricas clave (Core Web Vitals)
+  const metricIds = ['first-contentful-paint', 'largest-contentful-paint', 'total-blocking-time', 'cumulative-layout-shift', 'speed-index', 'interactive'];
+  const metrics = {};
+  for (const id of metricIds) {
+    const audit = audits[id];
+    if (audit) {
+      metrics[id] = {
+        value: audit.numericValue || null,
+        display: audit.displayValue || '',
+        score: audit.score,
+      };
+    }
+  }
+
   return {
     url,
     strategy,
     scores,
+    metrics,
     issues,
     loadingExperience: data?.loadingExperience || null,
     generatedAt: new Date().toISOString(),
