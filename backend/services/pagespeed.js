@@ -20,13 +20,27 @@ export async function auditPage(url, strategy = 'mobile') {
     const params = new URLSearchParams({
       url,
       strategy,
-      // Usamos API key si está configurada, sino funciona sin key (cuotas más bajas)
     });
     if (API_KEY) params.set('key', API_KEY);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
     const response = await fetch(`${BASE_URL}?${params}`, {
       headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
+
+    if (response.status === 429) {
+      return {
+        error: 'Límite de cuota diaria excedido. Agregá GOOGLE_API_KEY en Vercel para más cuota.',
+        url,
+        strategy,
+        scores: {},
+        issues: { errors: [], warnings: [], passed: [] },
+      };
+    }
 
     if (!response.ok) {
       const text = await response.text();
@@ -36,8 +50,11 @@ export async function auditPage(url, strategy = 'mobile') {
     const data = await response.json();
     return parseLighthouse(data, url, strategy);
   } catch (err) {
+    if (err.name === 'AbortError') {
+      return { error: 'Timeout — la API tardó más de 20s en responder', url, strategy, scores: {}, issues: { errors: [], warnings: [], passed: [] } };
+    }
     console.error(`[PageSpeed] Error auditing ${url}:`, err.message);
-    return { error: err.message, url, strategy };
+    return { error: err.message, url, strategy, scores: {}, issues: { errors: [], warnings: [], passed: [] } };
   }
 }
 
