@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
-  const days = parseInt(searchParams.get('days')) || 30;
+  const days = parseInt(searchParams.get('days')) || 180;
   let gsc = null, ga4 = null, clarity = null;
 
   // Llamar a las APIs directamente (no desde DB)

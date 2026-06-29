@@ -10,7 +10,7 @@ const BACKEND = CONFIG.BACKEND_URL;
  * Fetch del dashboard consolidado (todo en 1 llamada)
  */
 export async function fetchDashboard() {
-  const res = await fetch(`${BACKEND}/api/dashboard?days=7`, {
+  const res = await fetch(`${BACKEND}/api/dashboard?days=180`, {
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`Dashboard API: ${res.status}`);
@@ -20,7 +20,7 @@ export async function fetchDashboard() {
 /**
  * Fetch de tendencias históricas
  */
-export async function fetchTrends(days = 30) {
+export async function fetchTrends(days = 180) {
   const res = await fetch(`${BACKEND}/api/trends?days=${days}`, {
     cache: 'no-store',
   });

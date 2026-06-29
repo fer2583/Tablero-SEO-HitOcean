@@ -20,7 +20,7 @@ async function loadExternalData() {
   try {
     const [dashboard, trends, alerts] = await Promise.all([
       fetchLiveDashboard(),
-      fetchTrends(30),
+      fetchTrends(180),
       fetchAlerts('active'),
     ]);
 
