@@ -28,20 +28,15 @@ export async function fetchClarityDaily({ days = 1, startDate, endDate } = {}) {
   const numOfDays = Math.min(Math.max(days, 1), 3);
 
   try {
-    // 1. Métricas generales sin dimensiones
-    const dailyRes = await fetchClarityAPI({
-      numOfDays,
-    });
-
-    // 2. Datos desglosados por URL (páginas)
-    const pagesRes = await fetchClarityAPI({
+    // Una sola llamada con dimensión URL para obtener todo en 1 request (quota: 10/día)
+    const apiRes = await fetchClarityAPI({
       numOfDays,
       dimension1: 'URL',
     });
 
     // Transformar respuesta a formato uniforme
-    const daily = parseMetrics(dailyRes);
-    const pages = parsePages(pagesRes);
+    const daily = parseMetrics(apiRes);
+    const pages = parsePages(apiRes);
 
     return {
       daily,
@@ -89,35 +84,32 @@ async function fetchClarityAPI(params = {}) {
 
 /**
  * Parsear respuesta de métricas a formato daily
+ * Suma entre filas porque la respuesta viene dimensionada por URL
  */
 function parseMetrics(data) {
   if (!Array.isArray(data)) return [];
 
-  const result = {};
+  const totals = {};
   const today = new Date().toISOString().split('T')[0];
 
   data.forEach(metric => {
-    const metricName = metric.metricName;
     const info = metric.information || [];
 
     info.forEach(row => {
-      // Acumular métricas sin dimensión (total general)
-      if (metricName === 'Traffic') {
-        result.totalSessionCount = row.totalSessionCount;
-        result.totalBotSessionCount = row.totalBotSessionCount;
-        result.distantUserCount = row.distantUserCount;
-      }
+      // Sumar todas las filas (cada fila = una URL)
+      totals.totalSessionCount = (totals.totalSessionCount || 0) + (parseInt(row.totalSessionCount) || 0);
+      totals.totalBotSessionCount = (totals.totalBotSessionCount || 0) + (parseInt(row.totalBotSessionCount) || 0);
+      totals.distantUserCount = (totals.distantUserCount || 0) + (parseInt(row.distantUserCount) || 0);
     });
   });
 
   return [{
     date: today,
-    page_views: parseInt(result.totalSessionCount) || 0,
-    users: parseInt(result.distantUserCount) || 0,
+    page_views: totals.totalSessionCount || 0,
+    users: totals.distantUserCount || 0,
     recordings: 0,
     rage_clicks: 0,
     dead_clicks: 0,
-    ...result,
   }];
 }
 
