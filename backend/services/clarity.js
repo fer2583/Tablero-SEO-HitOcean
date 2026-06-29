@@ -1,45 +1,55 @@
 // =============================================================
 // Microsoft Clarity Data Export API
-// Métricas: page views, recordings, rage clicks, dead clicks
+// Documentación oficial:
+// https://learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-data-export-api
+//
+// Endpoint: GET https://www.clarity.ms/export-data/api/v1/project-live-insights
+// Parámetros: numOfDays (1|2|3), dimension1, dimension2, dimension3
+// Máximo 10 requests/día/proyecto
+// Solo devuelve datos de los últimos 1-3 días
 // =============================================================
 
-const CLARITY_PROJECT_ID = process.env.CLARITY_PROJECT_ID || 'W0cjMKViRA6uFxYmp-SLcg';
+const CLARITY_PROJECT_ID = process.env.CLARITY_PROJECT_ID || '';
 const CLARITY_TOKEN = process.env.CLARITY_TOKEN || '';
 
-const BASE_URL = 'https://export-api.clarity.microsoft.com';
+const BASE_URL = 'https://www.clarity.ms';
+const ENDPOINT = '/export-data/api/v1/project-live-insights';
 
 /**
- * Fetch métricas diarias de Clarity
+ * Fetch métricas de Clarity (últimos 1-3 días, es el máximo que ofrece la API)
  */
-export async function fetchClarityDaily({ days = 7, startDate, endDate } = {}) {
+export async function fetchClarityDaily({ days = 1, startDate, endDate } = {}) {
   if (!CLARITY_TOKEN) {
     console.warn('[Clarity] No token configured');
     return { error: 'CLARITY_TOKEN not configured', daily: [], pages: [] };
   }
 
-  const end = endDate || new Date().toISOString().split('T')[0];
-  const start = startDate || new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+  // La API solo acepta 1, 2 o 3 días
+  const numOfDays = Math.min(Math.max(days, 1), 3);
 
   try {
-    // 1. Métricas generales del proyecto
-    const dailyRes = await fetchClarityAPI('/api/v1/projects/daily', {
-      startDate: start,
-      endDate: end,
-      granularity: 'day',
+    // 1. Métricas generales sin dimensiones
+    const dailyRes = await fetchClarityAPI({
+      numOfDays,
     });
 
-    // 2. Páginas con más rage clicks / dead clicks
-    const pagesRes = await fetchClarityAPI('/api/v1/projects/top-pages', {
-      startDate: start,
-      endDate: end,
-      limit: 50,
-      orderBy: 'recordings',
+    // 2. Datos desglosados por URL (páginas)
+    const pagesRes = await fetchClarityAPI({
+      numOfDays,
+      dimension1: 'URL',
     });
+
+    // Transformar respuesta a formato uniforme
+    const daily = parseMetrics(dailyRes);
+    const pages = parsePages(pagesRes);
 
     return {
-      daily: dailyRes?.data || [],
-      pages: pagesRes?.data || [],
-      period: { start, end },
+      daily,
+      pages,
+      period: {
+        start: new Date(Date.now() - numOfDays * 86400000).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0],
+      },
       generatedAt: new Date().toISOString(),
     };
   } catch (err) {
@@ -51,48 +61,111 @@ export async function fetchClarityDaily({ days = 7, startDate, endDate } = {}) {
 /**
  * Llamada a la API de Clarity
  */
-async function fetchClarityAPI(endpoint, params = {}) {
-  const query = new URLSearchParams({
-    ...params,
-    projectId: CLARITY_PROJECT_ID,
-  }).toString();
+async function fetchClarityAPI(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      query.set(key, String(value));
+    }
+  });
 
-  const response = await fetch(`${BASE_URL}${endpoint}?${query}`, {
+  const url = `${BASE_URL}${ENDPOINT}?${query.toString()}`;
+  console.log('[Clarity] Fetching:', url.replace(CLARITY_TOKEN, '***'));
+
+  const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${CLARITY_TOKEN}`,
-      'Accept': 'application/json',
+      'Content-Type': 'application/json',
     },
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Clarity API ${response.status}: ${text.slice(0, 200)}`);
+    throw new Error(`Clarity API ${response.status}: ${text.slice(0, 300)}`);
   }
 
   return response.json();
 }
 
 /**
+ * Parsear respuesta de métricas a formato daily
+ */
+function parseMetrics(data) {
+  if (!Array.isArray(data)) return [];
+
+  const result = {};
+  const today = new Date().toISOString().split('T')[0];
+
+  data.forEach(metric => {
+    const metricName = metric.metricName;
+    const info = metric.information || [];
+
+    info.forEach(row => {
+      // Acumular métricas sin dimensión (total general)
+      if (metricName === 'Traffic') {
+        result.totalSessionCount = row.totalSessionCount;
+        result.totalBotSessionCount = row.totalBotSessionCount;
+        result.distantUserCount = row.distantUserCount;
+      }
+    });
+  });
+
+  return [{
+    date: today,
+    page_views: parseInt(result.totalSessionCount) || 0,
+    users: parseInt(result.distantUserCount) || 0,
+    recordings: 0,
+    rage_clicks: 0,
+    dead_clicks: 0,
+    ...result,
+  }];
+}
+
+/**
+ * Parsear respuesta de páginas
+ */
+function parsePages(data) {
+  if (!Array.isArray(data)) return [];
+
+  // Buscar el bloque de tráfico por URL
+  const trafficMetric = data.find(m => m.metricName === 'Traffic');
+  if (!trafficMetric || !trafficMetric.information) return [];
+
+  return trafficMetric.information.map(row => ({
+    url: row.URL || '(unknown)',
+    sessions: parseInt(row.totalSessionCount) || 0,
+    botSessions: parseInt(row.totalBotSessionCount) || 0,
+    users: parseInt(row.distantUserCount) || 0,
+    pagesPerSession: parseFloat(row.PagesPerSessionPercentage) || 0,
+  })).sort((a, b) => b.sessions - a.sessions);
+}
+
+/**
  * Obtener últimos datos de Clarity desde DB (para el frontend)
  */
 export async function getLatestData({ days = 7 } = {}) {
-  const { query } = await import('../db/client.js');
-  const end = new Date().toISOString().split('T')[0];
-  const start = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+  try {
+    const { query } = await import('../db/client.js');
+    const end = new Date().toISOString().split('T')[0];
+    const start = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
 
-  const result = await query(`
-    SELECT 
-      date,
-      SUM(page_views) as page_views,
-      SUM(users) as users,
-      SUM(recordings) as recordings,
-      SUM(rage_clicks) as rage_clicks,
-      SUM(dead_clicks) as dead_clicks
-    FROM clarity_daily 
-    WHERE date >= $1 AND date <= $2
-    GROUP BY date
-    ORDER BY date DESC
-  `, [start, end]);
+    const result = await query(`
+      SELECT 
+        date,
+        SUM(page_views) as page_views,
+        SUM(users) as users,
+        SUM(recordings) as recordings,
+        SUM(rage_clicks) as rage_clicks,
+        SUM(dead_clicks) as dead_clicks
+      FROM clarity_daily 
+      WHERE date >= $1 AND date <= $2
+      GROUP BY date
+      ORDER BY date DESC
+    `, [start, end]);
 
-  return result.rows;
+    return result.rows;
+  } catch (err) {
+    console.warn('[Clarity] DB not available:', err.message);
+    return [];
+  }
 }
