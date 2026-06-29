@@ -48,6 +48,9 @@ async function loadExternalData() {
     s.external.lastUpdated = new Date();
     s.external.loading = false;
 
+    // Cache para re-render SEO sin re-fetch
+    window.__seoState = s;
+    window.__seoRender = () => { const seo = C.seo; $('root').innerHTML = seo.render(s); seo.bindComponent(); };
     render();
     console.log(`[External] Live data loaded (${days} days):`, dashboard.kpis);
   } catch (e) {
