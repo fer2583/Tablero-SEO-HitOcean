@@ -3,5 +3,5 @@ export const CONFIG = {
   DATA_URL: "https://script.google.com/macros/s/AKfycbzUsfF3qMrqvI2rvGZdQfQZc1GaTMYkhWcpgvnkZ1Of7_BsAKEYj_hsKOtrGQLru0tpNA/exec",
   POST_URL: "https://script.google.com/macros/s/AKfycbzUsfF3qMrqvI2rvGZdQfQZc1GaTMYkhWcpgvnkZ1Of7_BsAKEYj_hsKOtrGQLru0tpNA/exec",
   // Backend de APIs externas (GSC, GA4, Clarity, SEMrush)
-  BACKEND_URL: "https://hitocean-seo-backend.vercel.app"
+  BACKEND_URL: "https://tablero-seo-hit-ocean-vs3h.vercel.app"
 };
