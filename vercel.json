@@ -16,9 +16,5 @@
     { "src": "/api/trends", "dest": "backend/api/trends.js" },
     { "src": "/api/alerts", "dest": "backend/api/alerts.js" },
     { "src": "/api/cron/(.*)", "dest": "backend/api/cron.js" }
-  ],
-  "cron": [
-    { "path": "/api/cron/daily", "schedule": "0 6 * * *" },
-    { "path": "/api/cron/weekly", "schedule": "0 7 * * 0" }
   ]
 }
