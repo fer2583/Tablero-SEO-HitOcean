@@ -1,0 +1,17 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Backend
+backend/.env
+backend/credentials/*.json
+backend/exports/
+backend/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

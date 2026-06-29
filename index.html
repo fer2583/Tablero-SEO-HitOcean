@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HitOcean SEO Control Center V7 Client Ready</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <img src='assets/hitocean-logo.jpg' alt='HitOcean logo'>
+      <div><strong>HitOcean</strong><span>SEO Control Center V7</span></div>
+    </div>
+    <div class="theme"><button data-theme="light" class="active">☀ Light</button><button data-theme="dark">🌙 Dark</button></div>
+    <nav id="nav">
+      <button class="active" data-view="executive">📊 Ejecutivo</button>
+      <button data-view="analytics">🧠 Analytics</button>
+      <button data-view="operation">⚙️ Operación</button>
+      <button data-view="master">🗂️ Master URLs</button>
+      <button data-view="metadata">🏷️ Metadata</button>
+      <button data-view="keywords">🔎 Keywords</button>
+      <button data-view="redirects">↪️ Redirects</button>
+      <button data-view="protected">🛡️ Protegidas</button>
+      <button data-view="checklist">✅ Checklist</button>
+      <button data-view="setup">🔌 Setup</button>
+    </nav>
+    <div class="sidebox sourceBox"><small>Fuente de datos</small><b>📡 Live: GSC · GA4 · Clarity</b><div class="sourceGrid"><span>📊 Google Search Console</span><span>📈 Google Analytics 4</span><span>🖱️ Microsoft Clarity</span><span>📋 Google Sheets</span><span>🔍 SEMrush (próximamente)</span><span>🏷️ GTM (próximamente)</span></div></div>
+    <div class="sidebox"><small>Arquitectura</small><b>Componentes por menú</b><p>Google Sheets → Apps Script → Cloudflare Pages. Sin React, npm ni build.</p></div>
+    <div class="sidebox"><small>Modo editable</small><b>Preparado para doPost()</b><p>La lectura funciona con tu JSON actual. La escritura requiere actualizar Apps Script con Code.gs.</p></div>
+  </aside>
+
+  <main>
+    <header class="hero">
+      <div><p class="eyebrow">Migración SEO WordPress → Astro</p><h1 id="viewTitle">Ejecutivo</h1><p id="viewSubtitle">Vista gerencial del estado de migración.</p></div>
+      <div class="actions"><button class="btn" id="refresh">↻ Actualizar</button><button class="btn ghost" id="refreshLive" title="Actualizar datos en vivo (GSC, GA4, Clarity)">📡 Live</button><button class="btn ghost" id="edit">✏️ Editar URL</button><button class="btn ghost" id="export">⬇ CSV</button><a class="btn ghost" target="_blank" id="sheet">↗ Sheet</a></div>
+    </header>
+    <div id="status" class="status loading">Conectando...</div>
+    <section class="filters card">
+      <div class="filtersHead"><div><strong>Filtros globales</strong><p>Impactan todas las vistas y componentes.</p></div><button class="btn ghost small" id="clear">Limpiar</button></div>
+      <div class="filterGrid"><input id="q" type="search" placeholder="Buscar URL, keyword, title, issue..."><select id="priority"><option value="">Prioridad</option></select><select id="action"><option value="">Acción</option></select><select id="type"><option value="">Tipo</option></select><select id="meta"><option value="">Metadata</option></select><select id="qa"><option value="">QA</option></select><select id="http"><option value="">HTTP</option></select></div>
+      <div id="presets" class="presets"></div>
+    </section>
+    <section id="root" class="root"></section>
+  </main>
+</div>
+
+<div id="modal" class="modalBack">
+  <div class="modal">
+    <div class="modalHead"><div><h2>Editar registro</h2><p id="editTarget">Seleccioná una URL.</p></div><button class="btn ghost" id="closeModal">Cerrar</button></div>
+    <div class="modalGrid">
+      <label class="full">URL actual<input id="fUrl" disabled></label>
+      <label>Prioridad<select id="fPriority"><option value="">—</option><option>Alta</option><option>Media</option><option>Baja</option></select></label>
+      <label>Acción sugerida<select id="fAction"><option value="">—</option><option>Mantener</option><option>Migrar</option><option>Optimizar metadata</option><option>Redirect 301</option><option>Consolidar</option><option>Noindex</option><option>Eliminar</option><option>Proteger URL</option><option>Revisar</option></select></label>
+      <label class="full">Destino sugerido<select id="fTargetSelect"><option value="">Seleccionar destino existente o mantener manual</option></select></label>
+      <label class="full">URL nueva / destino<input id="fTarget" placeholder="Pegá o confirmá la URL destino"></label>
+      <label class="full">KW objetivo nueva<input id="fKwTarget" list="kwOptions" placeholder="Keyword objetivo para Astro"><datalist id="kwOptions"></datalist></label>
+      <label>Plantilla rápida<select id="fTemplate"><option value="">Sin plantilla</option><option value="service">Servicio / solución</option><option value="blog">Blog / artículo</option><option value="location">Landing local</option><option value="brand">Brand / corporativo</option></select></label>
+      <label class="full">Title nuevo Astro<input id="fTitleNew" placeholder="Título optimizado para la nueva versión"></label>
+      <label class="full">Description nueva Astro<textarea id="fDescriptionNew"></textarea></label>
+      <label>Checklist metadata<select id="fMeta"><option value="">—</option><option>OK</option><option>Optimizar</option><option>Incompleto</option><option>Revisar</option></select></label>
+      <label>QA migración<select id="fQa"><option value="">—</option><option>Pendiente</option><option>En progreso</option><option>Revisar en staging</option><option>Aprobado</option></select></label>
+      <label class="full">Notas<textarea id="fNotes"></textarea></label>
+    </div>
+    <div id="modalNotice" class="modalNotice"></div>
+    <div class="modalActions"><button class="btn ghost" id="cancel">Cancelar</button><button class="btn" id="save">Guardar cambios</button></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

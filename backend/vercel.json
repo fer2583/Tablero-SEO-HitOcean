@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/gsc", "dest": "/api/gsc.js" },
+    { "src": "/api/gsc/(.*)", "dest": "/api/gsc.js" },
+    { "src": "/api/ga4", "dest": "/api/ga4.js" },
+    { "src": "/api/ga4/(.*)", "dest": "/api/ga4.js" },
+    { "src": "/api/clarity", "dest": "/api/clarity.js" },
+    { "src": "/api/clarity/(.*)", "dest": "/api/clarity.js" },
+    { "src": "/api/dashboard", "dest": "/api/dashboard.js" },
+    { "src": "/api/trends", "dest": "/api/trends.js" },
+    { "src": "/api/alerts", "dest": "/api/alerts.js" },
+    { "src": "/api/cron/(.*)", "dest": "/api/cron.js" }
+  ],
+  "cron": [
+    { "path": "/api/cron/daily", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/weekly", "schedule": "0 7 * * 0" }
+  ],
+  "env": {
+    "DATABASE_URL": "@vercel-postgres-database-url",
+    "GA4_PROPERTY_ID": "448832584",
+    "GSC_SITE_URL": "https://hitocean.com",
+    "CLARITY_PROJECT_ID": "W0cjMKViRA6uFxYmp-SLcg"
+  }
+}

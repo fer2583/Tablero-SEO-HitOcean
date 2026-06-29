@@ -1,0 +1,21 @@
+{
+  "name": "hitocean-seo-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev.js",
+    "start": "node api/index.js",
+    "db:init": "node db/init.js",
+    "cron:daily": "node cron/daily.js",
+    "semrush:export": "node semrush/export.js"
+  },
+  "dependencies": {
+    "googleapis": "^140.0.0",
+    "@neondatabase/serverless": "^0.10.0",
+    "pg": "^8.13.0",
+    "puppeteer": "^23.0.0",
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0"
+  }
+}

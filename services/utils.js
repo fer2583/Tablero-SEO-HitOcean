@@ -1,0 +1,14 @@
+export const fmt=new Intl.NumberFormat('es-AR');
+export const COLORS=['var(--primary)','var(--green)','var(--amber)','var(--red)','var(--purple)','var(--teal)','var(--muted)'];
+export const n=v=>(v??'').toString().trim();
+export const num=v=>typeof v==='number'?v:Number(n(v).replace(/\./g,'').replace(',','.').replace('%','')||0)||0;
+export const esc=s=>n(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+export const path=u=>{try{return new URL(u).pathname||'/'}catch(e){return u||'—'}};
+export const pill=(t,c='gray')=>`<span class="pill ${c}">${esc(t||'—')}</span>`;
+export const pclass=p=>{p=n(p).toLowerCase();if(p.includes('alta')||p.includes('high'))return'alta';if(p.includes('media')||p.includes('medium'))return'media';if(p.includes('baja')||p.includes('low'))return'baja';return'gray'};
+export const countBy=(rows,key)=>{const m={};rows.forEach(r=>{const k=n(typeof key==='function'?key(r):r[key])||'Sin dato';m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+export const bar=entries=>{entries=entries.slice(0,7);const max=Math.max(...entries.map(e=>e[1]),1);return entries.map((e,i)=>`<div class="chartrow"><div class="chartlabel" title="${esc(e[0])}">${esc(e[0])}</div><div class="track"><div class="fill" style="width:${Math.max(3,e[1]/max*100)}%;background:${COLORS[i%COLORS.length]}"></div></div><div class="value">${fmt.format(e[1])}</div></div>`).join('')};
+export const list=(rows,sub)=>rows.length?rows.map(r=>`<div class="item" data-select-url="${encodeURIComponent(r.url)}"><b>${esc(path(r.url))}</b><span>${sub(r)}</span></div>`).join(''):'<div class="muted">Sin datos para esta vista.</div>';
+export const pct=(part,total)=>Math.max(0,Math.min(100,total?Math.round(part/total*100):0));
+export const donuts=items=>`<div class="donutWrap">${items.map(i=>`<div class="donutCard"><div class="donutCircle" style="--pct:${pct(i.value,i.total)}" data-label="${pct(i.value,i.total)}%"></div><div><span>${esc(i.label)}</span><strong>${fmt.format(i.value)}</strong><small class="muted">de ${fmt.format(i.total)}</small></div></div>`).join('')}</div>`;
+export const miniRows=(entries)=>`<div class="miniTable">${entries.slice(0,8).map(e=>`<div class="miniRow"><b title="${esc(e[0])}">${esc(e[0])}</b><span>${fmt.format(e[1])}</span></div>`).join('')}</div>`;

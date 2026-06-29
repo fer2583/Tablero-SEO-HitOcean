@@ -1,0 +1,3 @@
+import{CONFIG}from'../config.js';import{normalizeData}from'./normalize.js';
+export async function fetchDashboardData(){const r=await fetch(CONFIG.DATA_URL,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return normalizeData(await r.json())}
+export async function saveRowUpdate(url,updates){const payload={action:'updateRow',sheetName:'Master SEO Migración',keyColumn:'URL actual',key:url,updates};const r=await fetch(CONFIG.POST_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});const data=await r.json();if(!data.ok)throw new Error(data.error||'No se pudo guardar');return data}
