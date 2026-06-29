@@ -1,5 +1,5 @@
 import{CONFIG}from'./config.js';import{fetchDashboardData,saveRowUpdate}from'./services/api.js';import{applyGlobalFilters,PRESETS}from'./services/filters.js';import{esc,n,num,fmt}from'./services/utils.js';import{fetchDashboard as fetchLiveDashboard,fetchTrends,fetchAlerts}from'./services/external.js';import*as Executive from'./components/Executive.js';import*as Analytics from'./components/Analytics.js';import*as Operation from'./components/Operation.js';import*as Master from'./components/Master.js';import*as Metadata from'./components/Metadata.js';import*as Keywords from'./components/Keywords.js';import*as Redirects from'./components/Redirects.js';import*as Protected from'./components/Protected.js';import*as Checklist from'./components/Checklist.js';import*as Setup from'./components/Setup.js';
-const C={executive:Executive,analytics:Analytics,operation:Operation,master:Master,metadata:Metadata,keywords:Keywords,redirects:Redirects,protected:Protected,checklist:Checklist,setup:Setup};const s={currentView:'executive',activePreset:'all',data:{master:[],metadata:[],keywords:[],redirects:[],protected:[],issues:[],checklist:[]},filtered:[],selected:null,checkState:{},filters:{search:'',priority:'',action:'',type:'',meta:'',qa:'',http:''},external:{kpis:{},trends:{gsc:[],ga4:[],clarity:[]},alerts:[],lastUpdated:null,loading:false}};const $=id=>document.getElementById(id);const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2400)};const setStatus=(m,t='loading')=>{$('status').className='status '+t;$('status').textContent=m};function setTheme(t){localStorage.setItem('hito_theme',t);document.body.classList.toggle('dark',t==='dark');document.querySelectorAll('.theme button').forEach(b=>b.classList.toggle('active',b.dataset.theme===t))}
+const C={executive:Executive,analytics:Analytics,operation:Operation,master:Master,metadata:Metadata,keywords:Keywords,redirects:Redirects,protected:Protected,checklist:Checklist,setup:Setup};const s={currentView:'executive',activePreset:'all',data:{master:[],metadata:[],keywords:[],redirects:[],protected:[],issues:[],checklist:[]},filtered:[],selected:null,checkState:{},filters:{search:'',priority:'',action:'',type:'',meta:'',qa:'',http:''},external:{kpis:{},trends:{gsc:[],ga4:[],clarity:[]},alerts:[],lastUpdated:null,loading:false,daysRange:180}};const $=id=>document.getElementById(id);const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2400)};const setStatus=(m,t='loading')=>{$('status').className='status '+t;$('status').textContent=m};function setTheme(t){localStorage.setItem('hito_theme',t);document.body.classList.toggle('dark',t==='dark');document.querySelectorAll('.theme button').forEach(b=>b.classList.toggle('active',b.dataset.theme===t))}
 function presets(){ $('presets').innerHTML=Object.entries(PRESETS).map(([k,p])=>`<button class="chip ${s.activePreset===k?'active':''}" data-preset="${k}">${p.label}</button>`).join('')}
 function setView(v){s.currentView=v;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));render()}
 function fillSelect(id,vals){const el=$(id),first=el.options[0].outerHTML;el.innerHTML=first+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}function hydrate(){const u=f=>[...new Set(s.data.master.map(r=>n(r[f])).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));fillSelect('priority',u('priority'));fillSelect('action',u('action'));fillSelect('type',u('type'));fillSelect('meta',u('metaStatus'));fillSelect('qa',u('qa'));fillSelect('http',[...new Set(s.data.master.map(r=>String(num(r.status)||'')).filter(Boolean))])}
@@ -7,20 +7,36 @@ function sync(){s.filters={search:$('q').value,priority:$('priority').value,acti
 function apply(){sync();s.filtered=applyGlobalFilters(s);if(!s.selected&&s.filtered.length)s.selected=s.filtered[0];render()}
 function render(){const cmp=C[s.currentView]||C.executive;$('viewTitle').textContent=cmp.meta.title;$('viewSubtitle').textContent=cmp.meta.subtitle;$('root').innerHTML=cmp.render(s);bind()}
 function bind(){document.querySelectorAll('[data-select-url]').forEach(el=>el.onclick=()=>{const url=decodeURIComponent(el.dataset.selectUrl);s.selected=s.data.master.find(r=>r.url===url)||s.filtered.find(r=>r.url===url)||s.selected;if(s.currentView!=='master')setView('master');else render()});document.querySelectorAll('[data-toggle-task]').forEach(el=>el.onclick=e=>{e.stopPropagation();const i=Number(el.dataset.toggleTask);s.checkState[i]=!s.checkState[i];toast(s.checkState[i]?'Tarea aprobada':'Tarea desmarcada');render()});const b=$('detailEditBtn');if(b)b.onclick=openEdit}
+
+/**
+ * Cambiar rango de días y recargar datos en vivo
+ */
+function setDaysRange(days) {
+  s.external.daysRange = days;
+  // Actualizar botones de selección
+  document.querySelectorAll('.days-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.days) === days);
+  });
+  // Recargar con el nuevo rango
+  loadExternalData();
+}
+
 async function load(){try{setStatus('Cargando datos desde Google Sheets...','loading');s.data=await fetchDashboardData();s.data.checklist.forEach((t,i)=>{if(s.checkState[i]===undefined)s.checkState[i]=/aprobado/i.test(t.status)});hydrate();s.filtered=applyGlobalFilters(s);s.selected=s.filtered[0]||null;presets();render();setStatus(`Datos actualizados: ${fmt.format(s.data.master.length)} URLs · ${fmt.format(s.data.redirects.length)} redirects · ${new Date().toLocaleTimeString('es-AR')}`,'ok');toast('Datos actualizados');// Cargar datos de APIs externas en segundo plano
 loadExternalData()}catch(e){console.error(e);setStatus('No se pudo cargar la data. Revisá DATA_URL o Apps Script.','error');toast('Error al cargar datos')}}
 
 /**
  * Cargar datos en vivo desde el backend (GSC, GA4, Clarity)
+ * con el rango de días seleccionado
  */
 async function loadExternalData() {
   if (s.external.loading) return;
   s.external.loading = true;
+  const days = s.external.daysRange;
 
   try {
     const [dashboard, trends, alerts] = await Promise.all([
-      fetchLiveDashboard(),
-      fetchTrends(180),
+      fetchLiveDashboard(days),
+      fetchTrends(days),
       fetchAlerts('active'),
     ]);
 
@@ -31,11 +47,10 @@ async function loadExternalData() {
     s.external.loading = false;
 
     render();
-    console.log('[External] Live data loaded:', dashboard.kpis);
+    console.log(`[External] Live data loaded (${days} days):`, dashboard.kpis);
   } catch (e) {
     s.external.loading = false;
     console.warn('[External] Error loading live data:', e.message);
-    // No mostrar error al usuario, los datos de Sheets ya cargaron
   }
 }
 function modalNotice(msg,type='loading'){const el=$('modalNotice');if(!el)return;el.className='modalNotice '+type;el.textContent=msg}
@@ -48,4 +63,11 @@ async function save(){if(!s.selected)return;const updates={'Prioridad':$('fPrior
 function localUpdate(url,u){const map={'Prioridad':'priority','Acción sugerida':'action','URL nueva / destino':'target','KW objetivo nueva':'kwTarget','Title nuevo Astro':'titleNew','Description nueva Astro':'descriptionNew','Checklist metadata':'metaStatus','QA migración':'qa','Notas':'notes'};s.data.master.forEach(r=>{if(r.url===url)Object.entries(map).forEach(([col,key])=>r[key]=u[col])});s.selected=s.data.master.find(r=>r.url===url)||s.selected}
 function exportCSV(){const h=['URL','Tipo','Prioridad','Acción','Destino','HTTP','Clicks','Impressions','Position','Title','Description','KW','KW Astro','Title Astro','Description Astro','Metadata','QA','Issues','Notas'];const rows=s.filtered.map(r=>[r.url,r.type,r.priority,r.action,r.target,r.status,num(r.clicks),num(r.impressions),num(r.position),r.title,r.description,r.kw,r.kwTarget,r.titleNew,r.descriptionNew,r.metaStatus,r.qa,r.issues,r.notes]);const csv=[h,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download=`hitocean_${s.currentView}_filtered.csv`;a.click();toast('CSV exportado')}
 function clear(){['q','priority','action','type','meta','qa','http'].forEach(id=>$(id).value='');s.activePreset='all';presets();apply()}
-function init(){setTheme(localStorage.getItem('hito_theme')||'light');$('sheet').href=CONFIG.SHEET_URL;$('refresh').onclick=load;$('refreshLive')&&($('refreshLive').onclick=loadExternalData);$('edit').onclick=openEdit;$('export').onclick=exportCSV;$('clear').onclick=clear;$('closeModal').onclick=closeEdit;$('cancel').onclick=closeEdit;$('save').onclick=save;if($('fTemplate'))$('fTemplate').onchange=applyTemplate;$('modal').onclick=e=>{if(e.target.id==='modal')closeEdit()};document.querySelectorAll('.theme button').forEach(b=>b.onclick=()=>setTheme(b.dataset.theme));document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>setView(b.dataset.view));['q','priority','action','type','meta','qa','http'].forEach(id=>{$(id).oninput=apply;$(id).onchange=apply});$('presets').onclick=e=>{const b=e.target.closest('[data-preset]');if(!b)return;s.activePreset=b.dataset.preset;presets();apply()};load()}init();
+function init(){setTheme(localStorage.getItem('hito_theme')||'light');$('sheet').href=CONFIG.SHEET_URL;$('refresh').onclick=load;
+// Inicializar botón Live y selector de días
+$('refreshLive')&&($('refreshLive').onclick=()=>loadExternalData());
+document.querySelectorAll('.days-btn').forEach(b=>{
+  b.onclick=()=>setDaysRange(parseInt(b.dataset.days));
+  if(parseInt(b.dataset.days)===s.external.daysRange) b.classList.add('active');
+});
+$('edit').onclick=openEdit;$('export').onclick=exportCSV;$('clear').onclick=clear;$('closeModal').onclick=closeEdit;$('cancel').onclick=closeEdit;$('save').onclick=save;if($('fTemplate'))$('fTemplate').onchange=applyTemplate;$('modal').onclick=e=>{if(e.target.id==='modal')closeEdit()};document.querySelectorAll('.theme button').forEach(b=>b.onclick=()=>setTheme(b.dataset.theme));document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>setView(b.dataset.view));['q','priority','action','type','meta','qa','http'].forEach(id=>{$(id).oninput=apply;$(id).onchange=apply});$('presets').onclick=e=>{const b=e.target.closest('[data-preset]');if(!b)return;s.activePreset=b.dataset.preset;presets();apply()};load()}init();

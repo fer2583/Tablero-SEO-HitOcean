@@ -9,8 +9,8 @@ const BACKEND = CONFIG.BACKEND_URL;
 /**
  * Fetch del dashboard consolidado (todo en 1 llamada)
  */
-export async function fetchDashboard() {
-  const res = await fetch(`${BACKEND}/api/dashboard?days=180`, {
+export async function fetchDashboard(days = 180) {
+  const res = await fetch(`${BACKEND}/api/dashboard?days=${days}`, {
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`Dashboard API: ${res.status}`);

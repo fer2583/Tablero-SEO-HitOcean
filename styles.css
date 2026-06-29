@@ -16,3 +16,6 @@ body.dark{--bg:#08101b;--panel:#0f172a;--soft:#111b2f;--line:#1f2d44;--ink:#e5ed
 
 /* Alertas */
 .alertRow{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--soft);margin-bottom:6px;font-size:12px}.alertRow.red{border-left:4px solid var(--red)}.alertRow.amber{border-left:4px solid var(--amber)}.alertRow.blue{border-left:4px solid var(--primary)}.alertRow.gray{border-left:4px solid var(--muted)}.alertRow strong{font-size:13px}.alertRow .muted{color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Days filter */
+.days-filter{display:inline-flex;gap:2px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:2px;margin-left:4px}.days-btn{border:0;border-radius:999px;padding:6px 10px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);font-size:11px;transition:all .15s ease}.days-btn:hover{color:var(--ink)}.days-btn.active{background:var(--primary);color:#fff}.dark .days-btn.active{background:var(--primary);color:#fff}
