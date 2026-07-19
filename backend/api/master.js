@@ -135,7 +135,6 @@ export default async function handler(req, res) {
       ok: true,
       generatedAt: new Date().toISOString(),
       source: 'postgresql',
-      _dbgCount: masterResult.rows.length,
       sheets: {
         'Master SEO Migración': master,
         'Metadata Audit': metadata,

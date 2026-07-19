@@ -50,6 +50,6 @@
     { "src": "/api/updateRow", "dest": "backend/api/updateRow.js" },
     { "src": "/api/semrush/upload", "dest": "backend/api/semrush-upload.js" },
     { "src": "/api/site-health", "dest": "backend/api/site-health.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/", "dest": "index.html" }
   ]
 }
