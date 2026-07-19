@@ -137,6 +137,8 @@ export default async function handler(req, res) {
       generatedAt: new Date().toISOString(),
       source: 'postgresql',
       _debugMasterCount: debugCount.rows[0].n,
+      _debugMasterRowsLen: masterResult.rows ? masterResult.rows.length : 'undefined',
+      _debugMasterFirstUrl: masterResult.rows && masterResult.rows[0] ? masterResult.rows[0].url : 'none',
       sheets: {
         'Master SEO Migración': master,
         'Metadata Audit': metadata,
