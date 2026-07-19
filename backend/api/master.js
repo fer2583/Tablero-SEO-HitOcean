@@ -26,7 +26,6 @@ export default async function handler(req, res) {
     const redirectsResult = await query('SELECT * FROM redirects_review ORDER BY url');
     const protectedResult = await query('SELECT * FROM protected_urls ORDER BY clicks DESC');
     const checklistResult = await query('SELECT * FROM checklist_items ORDER BY id');
-    const debugCount = await query('SELECT COUNT(*)::int n FROM master_urls');
 
     // Mapear columnas de DB a nombres que el frontend espera (compatibilidad con normalizeData)
     const master = masterResult.rows.map(r => ({
@@ -136,9 +135,6 @@ export default async function handler(req, res) {
       ok: true,
       generatedAt: new Date().toISOString(),
       source: 'postgresql',
-      _debugMasterCount: debugCount.rows[0].n,
-      _debugMasterRowsLen: masterResult.rows ? masterResult.rows.length : 'undefined',
-      _debugMasterFirstUrl: masterResult.rows && masterResult.rows[0] ? masterResult.rows[0].url : 'none',
       sheets: {
         'Master SEO Migración': master,
         'Metadata Audit': metadata,
