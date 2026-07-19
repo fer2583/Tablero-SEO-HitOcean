@@ -163,6 +163,7 @@ export default async function handler(req, res) {
     if (path.endsWith('/debug')) {
       const envVars = {
         DATABASE_URL: process.env.DATABASE_URL ? '✅ SET' : '❌ NOT SET',
+        PGDATABASE_URL: process.env.PGDATABASE_URL ? '✅ SET (len ' + process.env.PGDATABASE_URL.length + ')' : '❌ NOT SET',
         GA4_PROPERTY_ID: process.env.GA4_PROPERTY_ID || '❌ NOT SET',
         GSC_SITE_URL: process.env.GSC_SITE_URL || '❌ NOT SET',
         CLARITY_PROJECT_ID: process.env.CLARITY_PROJECT_ID || '❌ NOT SET',
