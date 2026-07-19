@@ -7,23 +7,31 @@
     }
   ],
   "routes": [
-    { "src": "/api/gsc", "dest": "/api/gsc.js" },
-    { "src": "/api/gsc/(.*)", "dest": "/api/gsc.js" },
-    { "src": "/api/ga4", "dest": "/api/ga4.js" },
-    { "src": "/api/ga4/(.*)", "dest": "/api/ga4.js" },
-    { "src": "/api/clarity", "dest": "/api/clarity.js" },
-    { "src": "/api/clarity/(.*)", "dest": "/api/clarity.js" },
-    { "src": "/api/dashboard", "dest": "/api/dashboard.js" },
-    { "src": "/api/trends", "dest": "/api/trends.js" },
-    { "src": "/api/alerts", "dest": "/api/alerts.js" },
-    { "src": "/api/cron/(.*)", "dest": "/api/cron.js" }
+    { "src": "/api/analytics", "dest": "/api/analytics.js" },
+    { "src": "/api/analytics/(.*)", "dest": "/api/analytics.js" },
+    { "src": "/api/dashboard", "dest": "/api/analytics.js" },
+    { "src": "/api/trends", "dest": "/api/analytics.js" },
+    { "src": "/api/gsc", "dest": "/api/analytics.js" },
+    { "src": "/api/gsc/(.*)", "dest": "/api/analytics.js" },
+    { "src": "/api/ga4", "dest": "/api/analytics.js" },
+    { "src": "/api/ga4/(.*)", "dest": "/api/analytics.js" },
+    { "src": "/api/clarity", "dest": "/api/analytics.js" },
+    { "src": "/api/clarity/(.*)", "dest": "/api/analytics.js" },
+    { "src": "/api/alerts", "dest": "/api/analytics.js" },
+    { "src": "/api/pagespeed", "dest": "/api/analytics.js" },
+    { "src": "/api/pagespeed.js", "dest": "/api/analytics.js" },
+    { "src": "/api/debug", "dest": "/api/analytics.js" },
+    { "src": "/api/cron/(.*)", "dest": "/api/cron.js" },
+    { "src": "/api/master", "dest": "/api/master.js" },
+    { "src": "/api/updateRow", "dest": "/api/updateRow.js" },
+    { "src": "/api/semrush/upload", "dest": "/api/semrush-upload.js" },
+    { "src": "/api/site-health", "dest": "/api/site-health.js" }
   ],
   "cron": [
     { "path": "/api/cron/daily", "schedule": "0 6 * * *" },
     { "path": "/api/cron/weekly", "schedule": "0 7 * * 0" }
   ],
   "env": {
-    "DATABASE_URL": "@vercel-postgres-database-url",
     "GA4_PROPERTY_ID": "448832584",
     "GSC_SITE_URL": "https://hitocean.com",
     "CLARITY_PROJECT_ID": "W0cjMKViRA6uFxYmp-SLcg"

@@ -6,18 +6,25 @@
     }
   ],
   "routes": [
-    { "src": "/api/gsc", "dest": "backend/api/gsc.js" },
-    { "src": "/api/gsc/(.*)", "dest": "backend/api/gsc.js" },
-    { "src": "/api/ga4", "dest": "backend/api/ga4.js" },
-    { "src": "/api/ga4/(.*)", "dest": "backend/api/ga4.js" },
-    { "src": "/api/clarity", "dest": "backend/api/clarity.js" },
-    { "src": "/api/clarity/(.*)", "dest": "backend/api/clarity.js" },
-    { "src": "/api/debug", "dest": "backend/api/debug.js" },
-    { "src": "/api/dashboard", "dest": "backend/api/dashboard.js" },
-    { "src": "/api/trends", "dest": "backend/api/trends.js" },
-    { "src": "/api/alerts", "dest": "backend/api/alerts.js" },
-    { "src": "/api/pagespeed", "dest": "backend/api/pagespeed.js" },
-    { "src": "/api/pagespeed/(.*)", "dest": "backend/api/pagespeed.js" },
-    { "src": "/api/cron/(.*)", "dest": "backend/api/cron.js" }
+    { "src": "/api/analytics", "dest": "backend/api/analytics.js" },
+    { "src": "/api/analytics/(.*)", "dest": "backend/api/analytics.js" },
+    { "src": "/api/dashboard", "dest": "backend/api/analytics.js" },
+    { "src": "/api/trends", "dest": "backend/api/analytics.js" },
+    { "src": "/api/gsc", "dest": "backend/api/analytics.js" },
+    { "src": "/api/gsc/(.*)", "dest": "backend/api/analytics.js" },
+    { "src": "/api/ga4", "dest": "backend/api/analytics.js" },
+    { "src": "/api/ga4/(.*)", "dest": "backend/api/analytics.js" },
+    { "src": "/api/clarity", "dest": "backend/api/analytics.js" },
+    { "src": "/api/clarity/(.*)", "dest": "backend/api/analytics.js" },
+    { "src": "/api/alerts", "dest": "backend/api/analytics.js" },
+    { "src": "/api/pagespeed", "dest": "backend/api/analytics.js" },
+    { "src": "/api/pagespeed.js", "dest": "backend/api/analytics.js" },
+    { "src": "/api/pagespeed/(.*)", "dest": "backend/api/analytics.js" },
+    { "src": "/api/debug", "dest": "backend/api/analytics.js" },
+    { "src": "/api/cron/(.*)", "dest": "backend/api/cron.js" },
+    { "src": "/api/master", "dest": "backend/api/master.js" },
+    { "src": "/api/updateRow", "dest": "backend/api/updateRow.js" },
+    { "src": "/api/semrush/upload", "dest": "backend/api/semrush-upload.js" },
+    { "src": "/api/site-health", "dest": "backend/api/site-health.js" }
   ]
 }

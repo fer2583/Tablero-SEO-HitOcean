@@ -7,7 +7,8 @@
     "start": "node api/index.js",
     "db:init": "node db/init.js",
     "cron:daily": "node cron/daily.js",
-    "semrush:export": "node semrush/export.js"
+    "semrush:export": "node semrush/export.js",
+    "semrush:import": "node semrush/semrush-import-all.js"
   },
   "dependencies": {
     "googleapis": "^140.0.0",

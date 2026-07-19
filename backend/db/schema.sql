@@ -188,3 +188,218 @@ CREATE TABLE IF NOT EXISTS sync_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sync_log_source ON sync_log(source);
+
+-- =============================================================
+-- TABLAS PARA REEMPLAZAR GOOGLE SHEETS
+-- =============================================================
+
+-- 13. Master URLs - Tabla principal de migración SEO
+CREATE TABLE IF NOT EXISTS master_urls (
+  id SERIAL PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  path TEXT,
+  type VARCHAR(50),
+  priority VARCHAR(20),
+  action VARCHAR(100),
+  target TEXT,
+  status VARCHAR(50),
+  clicks INT DEFAULT 0,
+  impressions INT DEFAULT 0,
+  ctr FLOAT DEFAULT 0,
+  position FLOAT DEFAULT 0,
+  kw TEXT,
+  kw_target TEXT,
+  title TEXT,
+  title_len INT DEFAULT 0,
+  title_new TEXT,
+  description TEXT,
+  description_len INT DEFAULT 0,
+  description_new TEXT,
+  canonical TEXT,
+  in_sitemap INT DEFAULT 0,
+  crawl_depth INT DEFAULT 0,
+  incoming_links INT DEFAULT 0,
+  outgoing_links INT DEFAULT 0,
+  jsonld INT DEFAULT 0,
+  og INT DEFAULT 0,
+  twitter INT DEFAULT 0,
+  schema_type TEXT,
+  issues_count INT DEFAULT 0,
+  issues TEXT,
+  intent VARCHAR(50),
+  meta_status VARCHAR(30),
+  qa VARCHAR(30),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_master_urls_url ON master_urls(url);
+CREATE INDEX IF NOT EXISTS idx_master_urls_priority ON master_urls(priority);
+CREATE INDEX IF NOT EXISTS idx_master_urls_action ON master_urls(action);
+CREATE INDEX IF NOT EXISTS idx_master_urls_meta_status ON master_urls(meta_status);
+
+-- 14. Metadata Audit
+CREATE TABLE IF NOT EXISTS metadata_audit (
+  id SERIAL PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  title TEXT,
+  title_len INT DEFAULT 0,
+  title_new TEXT,
+  description TEXT,
+  description_len INT DEFAULT 0,
+  description_new TEXT,
+  meta_status VARCHAR(30),
+  schema_type TEXT,
+  priority VARCHAR(20),
+  action VARCHAR(100),
+  kw_target TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_metadata_url ON metadata_audit(url);
+
+-- 15. Redirects Review
+CREATE TABLE IF NOT EXISTS redirects_review (
+  id SERIAL PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  priority VARCHAR(20),
+  action VARCHAR(100),
+  status VARCHAR(50),
+  target TEXT,
+  issues TEXT,
+  recommendation TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_redirects_url ON redirects_review(url);
+
+-- 16. Protected URLs
+CREATE TABLE IF NOT EXISTS protected_urls (
+  id SERIAL PRIMARY KEY,
+  url TEXT NOT NULL UNIQUE,
+  clicks INT DEFAULT 0,
+  impressions INT DEFAULT 0,
+  position FLOAT DEFAULT 0,
+  kw TEXT,
+  priority VARCHAR(20),
+  action VARCHAR(100),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_protected_url ON protected_urls(url);
+
+-- 17. Checklist Items
+CREATE TABLE IF NOT EXISTS checklist_items (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  category VARCHAR(50),
+  status VARCHAR(30) DEFAULT 'pending',  -- 'pending', 'in_progress', 'approved'
+  assignee TEXT,
+  url TEXT,
+  notes TEXT,
+  due_date DATE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 18. Site Health Snapshots (historial semanal)
+CREATE TABLE IF NOT EXISTS site_health_snapshots (
+  id SERIAL PRIMARY KEY,
+  week_start DATE NOT NULL,
+  score INT DEFAULT 0,
+  indexing_pct FLOAT DEFAULT 0,
+  cwv_score INT DEFAULT 0,
+  ctr_vs_benchmark FLOAT DEFAULT 0,
+  avg_position FLOAT DEFAULT 0,
+  engagement_rate FLOAT DEFAULT 0,
+  ux_score INT DEFAULT 0,
+  keywords_top10 INT DEFAULT 0,
+  breakdown JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_health_week ON site_health_snapshots(week_start);
+
+-- =============================================================
+-- TABLAS PARA INGESTA SEMRUSH (CSV semanal manual)
+-- =============================================================
+
+-- 19. SEMrush keyword export (Organic Positions)
+CREATE TABLE IF NOT EXISTS semrush_keywords (
+  id SERIAL PRIMARY KEY,
+  export_date DATE NOT NULL,
+  keyword TEXT NOT NULL,
+  position INT,
+  previous_position INT,
+  search_volume INT,
+  keyword_difficulty INT,
+  cpc FLOAT,
+  url TEXT,
+  traffic INT,
+  traffic_pct FLOAT,
+  traffic_cost FLOAT,
+  competition FLOAT,
+  num_results INT,
+  trends TEXT,
+  serp_features TEXT,
+  keyword_intents TEXT,
+  position_type VARCHAR(30),
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (export_date, keyword, url)
+);
+
+CREATE INDEX IF NOT EXISTS idx_semrush_kw ON semrush_keywords(keyword);
+CREATE INDEX IF NOT EXISTS idx_semrush_kw_url ON semrush_keywords(url);
+
+-- 20. Site Audit export (mega export de issues por URL)
+CREATE TABLE IF NOT EXISTS site_audit (
+  id SERIAL PRIMARY KEY,
+  export_date DATE NOT NULL,
+  page_url TEXT NOT NULL,
+  http_status_code INT,
+  crawl_depth INT,
+  load_time_ms FLOAT,
+  title TEXT,
+  description TEXT,
+  canonicalization TEXT,
+  in_sitemap BOOLEAN,
+  incoming_internal_links INT,
+  outgoing_internal_links INT,
+  outgoing_external_links INT,
+  schema_jsonld BOOLEAN,
+  schema_og BOOLEAN,
+  schema_twitter BOOLEAN,
+  schema_microformats BOOLEAN,
+  hreflang TEXT,
+  amp BOOLEAN,
+  blocked_ai BOOLEAN,
+  issues JSONB,
+  raw_issues JSONB,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (export_date, page_url)
+);
+
+CREATE INDEX IF NOT EXISTS idx_site_audit_url ON site_audit(page_url);
+
+-- 21. Sitemap crawl (páginas descubiertas en el crawl de SEMrush)
+CREATE TABLE IF NOT EXISTS sitemap_crawl (
+  id SERIAL PRIMARY KEY,
+  export_date DATE NOT NULL,
+  page_url TEXT NOT NULL UNIQUE,
+  http_status_code INT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sitemap_crawl_url ON sitemap_crawl(page_url);
+
+-- Columnas extra para auditoría SEMrush en master_urls (idempotente)
+ALTER TABLE master_urls ADD COLUMN IF NOT EXISTS outgoing_external_links INT DEFAULT 0;
+ALTER TABLE master_urls ADD COLUMN IF NOT EXISTS load_time_ms FLOAT;
+ALTER TABLE master_urls ADD COLUMN IF NOT EXISTS hreflang TEXT;
+ALTER TABLE master_urls ADD COLUMN IF NOT EXISTS blocked_ai BOOLEAN DEFAULT FALSE;
+ALTER TABLE master_urls ADD COLUMN IF NOT EXISTS http_status_code INT;

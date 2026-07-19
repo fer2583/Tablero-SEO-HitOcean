@@ -19,6 +19,12 @@ backend/node_modules/
 .DS_Store
 Thumbs.db
 
+# Playwright MCP artifacts
+.playwright-mcp/
+
 # IDE
 .vscode/
 .idea/
+
+.vercel
+.env*
