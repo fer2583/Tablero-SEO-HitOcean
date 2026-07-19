@@ -77,7 +77,7 @@ export async function fetchAlerts(mode = 'active') {
  * Usa ruta directa porque Vercel no redeployó la ruta custom
  */
 export async function fetchPageSpeed(strategy = 'mobile') {
-  const res = await fetch(`${BACKEND}/backend/api/pagespeed.js?mode=homepage&strategy=${strategy}`, {
+  const res = await fetch(`${BACKEND}/api/pagespeed?mode=homepage&strategy=${strategy}`, {
     cache: 'no-store',
   });
   if (!res.ok) {

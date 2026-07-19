@@ -38,8 +38,6 @@ export function render(s){return`
   <div class="detailRow"><span>POST /api/semrush/upload</span><p>Subir CSV de SEMrush → DB</p></div>
   <div class="detailRow"><span>GET /api/site-health</span><p>Site Health Score calculado con datos en vivo</p></div>
   <div class="detailRow"><span>GET /api/dashboard</span><p>KPIs consolidados de GSC + GA4 + Clarity</p></div>
-  <div class="detailRow"><span>Legacy DATA_URL</span><p><code style="opacity:0.5">${CONFIG.DATA_URL}</code> (descontinuado)</p></div>
-  <div class="detailRow"><span>Legacy SHEET_URL</span><p><a href="${CONFIG.SHEET_URL}" target="_blank" style="opacity:0.5">Abrir Google Sheet</a> (descontinuado)</p></div>
 </article>`}
 
 export function bindComponent(){
